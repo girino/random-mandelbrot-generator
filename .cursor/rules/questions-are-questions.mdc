@@ -1,0 +1,11 @@
+---
+description: Treat questions as requests for information, not implicit action
+alwaysApply: true
+---
+
+# Questions Require Answers
+
+- Treat a user question as a request for an answer only.
+- Do not edit files, run commands, create tasks, change configuration, or take external actions in response to a question.
+- Act only when the user explicitly asks for an action with an imperative request, such as "implement", "change", "run", "create", or "delete".
+- If intent is ambiguous, answer the question and ask whether the user wants the action performed.

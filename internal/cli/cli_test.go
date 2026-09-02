@@ -3,10 +3,12 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"image"
 	"image/png"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -31,10 +33,30 @@ func TestRenderValidation(t *testing.T) {
 		{"--output", "out.png", "--size", "3x3", "--width", "3"},
 		{"--output", "out.png", "--palette", "unknown"},
 		{"--output", "out.png", "--width", "16385"},
+		{"--output", "out.png", "--output-dir", "images"},
 	} {
 		if _, err := parseRenderOptions(args, &bytes.Buffer{}); err == nil {
 			t.Errorf("parseRenderOptions(%v) succeeded; want error", args)
 		}
+	}
+}
+
+func TestWriteSequentialPNG(t *testing.T) {
+	directory := t.TempDir()
+	if err := os.WriteFile(filepath.Join(directory, "frac000.png"), []byte("existing"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	first, err := writeSequentialPNG(directory, img)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := writeSequentialPNG(directory, img)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Base(first) != "frac001.png" || filepath.Base(second) != "frac002.png" {
+		t.Fatalf("sequential files = %q, %q", first, second)
 	}
 }
 
@@ -85,8 +107,21 @@ func TestRandomRenderIsReproducible(t *testing.T) {
 	if !bytes.Equal(first.Bytes(), second.Bytes()) {
 		t.Fatal("fixed random seed produced different PNG output")
 	}
+	if firstErr.String() != secondErr.String() || !strings.Contains(firstErr.String(), "reproduce with: fract render mandelbrot --center") {
+		t.Fatalf("unexpected reproduction output: %q", firstErr.String())
+	}
 	if _, err := png.Decode(bytes.NewReader(first.Bytes())); err != nil {
 		t.Fatalf("random stdout is not a PNG: %v", err)
+	}
+}
+
+func TestRandomPaletteIsReproducible(t *testing.T) {
+	options, err := parseRandomOptions([]string{"--output", "-", "--seed", "7", "--random-palette"}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !options.randomPalette {
+		t.Fatal("--random-palette was not parsed")
 	}
 }
 

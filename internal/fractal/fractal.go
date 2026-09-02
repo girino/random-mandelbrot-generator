@@ -66,8 +66,9 @@ type RenderOptions struct {
 
 // AdaptiveOptions controls Android-style boundary refinement after the first pass.
 type AdaptiveOptions struct {
-	MaxIterations int
-	MaxRounds     int
+	MaxIterations     int
+	MaxRounds         int
+	MinimumIterations int
 }
 
 // Render fills img using the configured escape-time formula and colorizer.
@@ -128,13 +129,14 @@ func renderPass(img *image.RGBA, options RenderOptions, iterations int, interior
 }
 
 func refineAdaptive(img *image.RGBA, options RenderOptions, interior []bool) {
-	maxIterations := max(options.Adaptive.MaxIterations, options.Iterations)
+	minimumIterations := max(options.Adaptive.MinimumIterations, options.Iterations)
+	maxIterations := max(options.Adaptive.MaxIterations, minimumIterations)
 	maxRounds := options.Adaptive.MaxRounds
 	if maxRounds < 1 {
 		maxRounds = 18
 	}
 	current := options.Iterations
-	for round := 0; round < maxRounds && current < maxIterations; round++ {
+	for round := 0; current < maxIterations && (round < maxRounds || current < minimumIterations); round++ {
 		next := maxIterations
 		if current <= maxIterations/2 {
 			next = current * 2
@@ -168,10 +170,10 @@ func refineAdaptive(img *image.RGBA, options RenderOptions, interior []bool) {
 				break
 			}
 		}
-		if !escapedAtLimit {
+		current = next
+		if !escapedAtLimit && current >= minimumIterations {
 			return
 		}
-		current = next
 	}
 }
 

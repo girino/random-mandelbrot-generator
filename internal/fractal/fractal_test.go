@@ -101,3 +101,26 @@ func TestAndroidProgressiveIterations(t *testing.T) {
 		t.Fatal("expected progressive iterations to cap")
 	}
 }
+
+func TestAdaptiveRefinementHonorsMinimumIterations(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
+	formula := Formula{
+		Step:         func(z, c complex128) complex128 { return z + c },
+		EscapeRadius: 4,
+		Degree:       2,
+	}
+	Render(img, RenderOptions{
+		Center: complex(.6, 0), ViewWidth: 1, ViewHeight: 1, Iterations: 2, Formula: formula,
+		Colorize: func(result Result) color.RGBA {
+			if result.Escaped {
+				return color.RGBA{R: 255, A: 255}
+			}
+			return color.RGBA{A: 255}
+		},
+		Threads:  1,
+		Adaptive: &AdaptiveOptions{MaxIterations: 8, MaxRounds: 1, MinimumIterations: 8},
+	})
+	if got := img.RGBAAt(0, 0); got.R != 255 {
+		t.Fatalf("adaptive render = %#v; expected escape after reaching minimum iterations", got)
+	}
+}

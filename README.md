@@ -15,11 +15,13 @@ fract render mandelbrot --output mandelbrot.png
 fract render mandelbrot --size 1920x1080 --center "-0.25 + .37 i" --zoom 400 --iterations 2000 --palette viridis --smooth --output detail.png
 fract render mandelbrot --output - --palette fire | uploader
 fract random --seed 42 --size 1080x1080 --metadata post.json --output post.png
+fract random --output-dir images
+fract random --random-palette --output-dir images
 ```
 
-`--output` is required. Use `--output -` to write only PNG bytes to standard
-output; all status, warnings, errors, and optional progress remain on standard
-error. Existing output files require `--force` to overwrite.
+Use either `--output` or `--output-dir`. `--output -` writes only PNG bytes to
+standard output; all status, warnings, errors, and optional progress remain on
+standard error. Existing output files require `--force` to overwrite.
 
 ## Commands
 
@@ -34,7 +36,8 @@ fract --version
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `--output PATH|-` | required | PNG destination or standard output |
+| `--output PATH|-` | one output mode required | PNG destination or standard output |
+| `--output-dir PATH` | | Write the next sequential `fracNNN.png` in a directory |
 | `--width N`, `--height N` | `1024`, `1024` | Image dimensions |
 | `--size WIDTHxHEIGHT` | | Alternative to width and height |
 | `--center VALUE` | `-0.5,0` | `REAL,IMAG` or complex notation such as `-0.25+.37i` |
@@ -86,6 +89,7 @@ passes before the final render.
 | `--min-zoom N` | `1.5` | Minimum zoom applied per pass |
 | `--max-zoom N` | `4` | Maximum zoom applied per pass |
 | `--sample-size N` | `128` | Width of the low-resolution classification grid |
+| `--random-palette` | off | Select a palette using the seeded random generator |
 | `--metadata PATH` | | Optional JSON record of the generated coordinates |
 
 All render options such as `--size`, `--iterations`, `--threads`, `--smooth`,
@@ -93,10 +97,16 @@ and `--palette` are available. The default palette is `rgb`.
 Random exploration grids use the Android Scale-with-zoom defaults: base `40`,
 multiplier `1.2`, and a range of `10` to `1,048,576` iterations. Their count
 increases logarithmically with each selected zoom. Adaptive refinement runs
-only once, for the final full-resolution image.
+only once, for the final full-resolution image. That final refinement continues
+until it reaches at least the highest iteration count used by an exploration
+grid, even if an earlier adaptive level found no new escaping pixels.
 The metadata stores the seed, chosen center, final zoom, dimensions, smoothing,
 palette, and every exploration step, so a generated image can be reproduced
 with `fract render`.
+
+After every `fract random` render, standard error prints a `fract render
+mandelbrot` command with the exact final render parameters. It writes to
+`reproduced.png`; change that output path before running it.
 
 ## Development
 

@@ -12,6 +12,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -35,6 +36,7 @@ const (
 
 type renderOptions struct {
 	output        string
+	outputDir     string
 	width         int
 	height        int
 	size          string
@@ -54,6 +56,7 @@ type renderOptions struct {
 
 type randomOptions struct {
 	output        string
+	outputDir     string
 	width         int
 	height        int
 	size          string
@@ -61,6 +64,7 @@ type randomOptions struct {
 	maxIterations int
 	adaptive      bool
 	palette       string
+	randomPalette bool
 	smooth        bool
 	threads       int
 	force         bool
@@ -135,6 +139,7 @@ func parseRenderOptions(args []string, stderr io.Writer) (renderOptions, error) 
 	fs := flag.NewFlagSet("render mandelbrot", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.StringVar(&o.output, "output", "", "PNG output path, or - for stdout")
+	fs.StringVar(&o.outputDir, "output-dir", "", "directory for the next fracNNN.png file")
 	fs.IntVar(&o.width, "width", defaultWidth, "image width in pixels")
 	fs.IntVar(&o.height, "height", defaultHeight, "image height in pixels")
 	fs.StringVar(&o.size, "size", "", "image size as WIDTHxHEIGHT")
@@ -156,11 +161,17 @@ func parseRenderOptions(args []string, stderr io.Writer) (renderOptions, error) 
 	if fs.NArg() != 0 {
 		return o, fmt.Errorf("unexpected argument %q", fs.Arg(0))
 	}
-	if o.output == "" {
-		return o, errors.New("--output is required")
+	if o.output == "" && o.outputDir == "" {
+		return o, errors.New("--output or --output-dir is required")
+	}
+	if o.output != "" && o.outputDir != "" {
+		return o, errors.New("--output cannot be combined with --output-dir")
 	}
 	if o.output == "-" && o.force {
 		return o, errors.New("--force cannot be used with --output -")
+	}
+	if o.outputDir != "" && o.force {
+		return o, errors.New("--force cannot be used with --output-dir")
 	}
 	var hasWidth, hasHeight, hasSize bool
 	fs.Visit(func(f *flag.Flag) {
@@ -206,6 +217,7 @@ func parseRandomOptions(args []string, stderr io.Writer) (randomOptions, error) 
 	fs := flag.NewFlagSet("random", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.StringVar(&o.output, "output", "", "PNG output path, or - for stdout")
+	fs.StringVar(&o.outputDir, "output-dir", "", "directory for the next fracNNN.png file")
 	fs.IntVar(&o.width, "width", defaultWidth, "image width in pixels")
 	fs.IntVar(&o.height, "height", defaultHeight, "image height in pixels")
 	fs.StringVar(&o.size, "size", "", "image size as WIDTHxHEIGHT")
@@ -213,6 +225,7 @@ func parseRandomOptions(args []string, stderr io.Writer) (randomOptions, error) 
 	fs.IntVar(&o.maxIterations, "max-iterations", defaultAdaptiveCap, "adaptive iteration ceiling for the final image")
 	fs.BoolVar(&o.adaptive, "adaptive", true, "adaptively refine the final image")
 	fs.StringVar(&o.palette, "palette", "rgb", "color palette")
+	fs.BoolVar(&o.randomPalette, "random-palette", false, "select a random color palette")
 	fs.BoolVar(&o.smooth, "smooth", true, "use smooth escape coloring")
 	fs.IntVar(&o.threads, "threads", runtime.NumCPU(), "render worker count")
 	fs.BoolVar(&o.force, "force", false, "overwrite an existing output file")
@@ -249,11 +262,17 @@ func parseRandomOptions(args []string, stderr io.Writer) (randomOptions, error) 
 	if !seedSet {
 		o.seed = time.Now().UnixNano()
 	}
-	if o.output == "" {
-		return o, errors.New("--output is required")
+	if o.output == "" && o.outputDir == "" {
+		return o, errors.New("--output or --output-dir is required")
+	}
+	if o.output != "" && o.outputDir != "" {
+		return o, errors.New("--output cannot be combined with --output-dir")
 	}
 	if o.output == "-" && o.force {
 		return o, errors.New("--force cannot be used with --output -")
+	}
+	if o.outputDir != "" && o.force {
+		return o, errors.New("--force cannot be used with --output-dir")
 	}
 	if hasSize && (hasWidth || hasHeight) {
 		return o, errors.New("--size cannot be combined with --width or --height")
@@ -307,13 +326,14 @@ func render(o renderOptions, stdout, stderr io.Writer) error {
 		Threads:  o.threads,
 		Progress: o.progress,
 		Stderr:   stderr,
-		Adaptive: adaptiveOptions(o.adaptive, o.maxIterations),
+		Adaptive: adaptiveOptions(o.adaptive, o.maxIterations, 0),
 	})
-	if err := writePNG(o.output, o.force, img, stdout); err != nil {
+	output, err := writeOutput(o.output, o.outputDir, o.force, img, stdout)
+	if err != nil {
 		return err
 	}
-	if !o.quiet && o.output != "-" {
-		fmt.Fprintln(stderr, "wrote", o.output)
+	if !o.quiet && output != "-" {
+		fmt.Fprintln(stderr, "wrote", output)
 	}
 	return nil
 }
@@ -325,8 +345,10 @@ func randomRender(o randomOptions, stdout, stderr io.Writer) error {
 	viewWidth := defaultViewportWide
 	viewHeight := viewWidth * float64(o.height) / float64(o.width)
 	steps := make([]randomStep, 0, passes)
+	searchIterations := 0
 	for pass := 0; pass < passes; pass++ {
 		scanIterations := fractal.AndroidProgressiveIterations(defaultViewportWide/viewWidth, o.sampleSize)
+		searchIterations = max(searchIterations, scanIterations)
 		borders := fractal.FindBorders(fractal.Mandelbrot, center, viewWidth, viewHeight, o.sampleSize, scanIterations)
 		if len(borders) == 0 {
 			return fmt.Errorf("exploration pass %d found no interior/exterior border", pass+1)
@@ -339,6 +361,10 @@ func randomRender(o randomOptions, stdout, stderr io.Writer) error {
 		steps = append(steps, randomStep{real(center), imag(center), factor, border.Complexity})
 	}
 	name := o.palette
+	if o.randomPalette {
+		names := palette.Names()
+		name = names[random.Intn(len(names))]
+	}
 	selected, _ := palette.Lookup(name)
 	if !o.quiet {
 		fmt.Fprintf(stderr, "explored %d passes with seed %d; rendering palette %s\n", passes, o.seed, name)
@@ -347,7 +373,7 @@ func randomRender(o randomOptions, stdout, stderr io.Writer) error {
 	fractal.Render(img, fractal.RenderOptions{
 		Center: center, ViewWidth: viewWidth, ViewHeight: viewHeight, Iterations: o.iterations,
 		Smooth: o.smooth, Formula: fractal.Mandelbrot, Threads: o.threads, Progress: o.progress, Stderr: stderr,
-		Adaptive: adaptiveOptions(o.adaptive, o.maxIterations),
+		Adaptive: adaptiveOptions(o.adaptive, o.maxIterations, searchIterations),
 		Colorize: func(result fractal.Result) color.RGBA {
 			if !result.Escaped {
 				return color.RGBA{A: 255}
@@ -355,24 +381,34 @@ func randomRender(o randomOptions, stdout, stderr io.Writer) error {
 			return selected(result.Value)
 		},
 	})
-	if err := writePNG(o.output, o.force, img, stdout); err != nil {
+	output, err := writeOutput(o.output, o.outputDir, o.force, img, stdout)
+	if err != nil {
 		return err
 	}
 	zoom := defaultViewportWide / viewWidth
 	if o.metadata != "" {
 		metadata := randomMetadata{
 			Seed: o.seed, Passes: passes, CenterReal: real(center), CenterImag: imag(center), Zoom: zoom,
-			Palette: name, Iterations: o.iterations, MaxIterations: o.maxIterations, Adaptive: o.adaptive,
+			Palette: name, Iterations: o.iterations, MaxIterations: max(o.maxIterations, searchIterations), Adaptive: o.adaptive,
 			Width: o.width, Height: o.height, Smooth: o.smooth, Steps: steps,
 		}
 		if err := writeMetadata(o.metadata, o.force, metadata); err != nil {
 			return err
 		}
 	}
-	if !o.quiet && o.output != "-" {
-		fmt.Fprintln(stderr, "wrote", o.output)
+	fmt.Fprintln(stderr, reproductionCommand(center, zoom, o, max(o.maxIterations, searchIterations), name))
+	if !o.quiet && output != "-" {
+		fmt.Fprintln(stderr, "wrote", output)
 	}
 	return nil
+}
+
+func reproductionCommand(center complex128, zoom float64, options randomOptions, maxIterations int, paletteName string) string {
+	centerValue := fmt.Sprintf("%.17g,%.17g", real(center), imag(center))
+	return fmt.Sprintf(
+		"reproduce with: fract render mandelbrot --center %q --zoom %.17g --iterations %d --max-iterations %d --adaptive=%t --palette %s --smooth=%t --width %d --height %d --threads %d --output reproduced.png",
+		centerValue, zoom, options.iterations, maxIterations, options.adaptive, paletteName, options.smooth, options.width, options.height, options.threads,
+	)
 }
 
 func weightedBorder(borders []fractal.Border, random *rand.Rand) fractal.Border {
@@ -390,16 +426,19 @@ func weightedBorder(borders []fractal.Border, random *rand.Rand) fractal.Border 
 	return borders[len(borders)-1]
 }
 
-func adaptiveOptions(enabled bool, maxIterations int) *fractal.AdaptiveOptions {
+func adaptiveOptions(enabled bool, maxIterations, minimumIterations int) *fractal.AdaptiveOptions {
 	if !enabled {
 		return nil
 	}
-	return &fractal.AdaptiveOptions{MaxIterations: maxIterations, MaxRounds: defaultAdaptiveRuns}
+	return &fractal.AdaptiveOptions{MaxIterations: maxIterations, MaxRounds: defaultAdaptiveRuns, MinimumIterations: minimumIterations}
 }
 
-func writePNG(output string, force bool, img image.Image, stdout io.Writer) error {
+func writeOutput(output, outputDir string, force bool, img image.Image, stdout io.Writer) (string, error) {
+	if outputDir != "" {
+		return writeSequentialPNG(outputDir, img)
+	}
 	if output == "-" {
-		return png.Encode(stdout, img)
+		return output, png.Encode(stdout, img)
 	}
 	flags := os.O_WRONLY | os.O_CREATE | os.O_TRUNC
 	if !force {
@@ -407,17 +446,54 @@ func writePNG(output string, force bool, img image.Image, stdout io.Writer) erro
 	}
 	file, err := os.OpenFile(output, flags, 0o644)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = png.Encode(file, img)
 	closeErr := file.Close()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if closeErr != nil {
-		return closeErr
+		return "", closeErr
 	}
-	return nil
+	return output, nil
+}
+
+func writeSequentialPNG(directory string, img image.Image) (string, error) {
+	entries, err := os.ReadDir(directory)
+	if err != nil {
+		return "", err
+	}
+	number := -1
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasPrefix(name, "frac") || !strings.HasSuffix(name, ".png") {
+			continue
+		}
+		value, err := strconv.Atoi(strings.TrimSuffix(strings.TrimPrefix(name, "frac"), ".png"))
+		if err == nil && value > number {
+			number = value
+		}
+	}
+	for number++; ; number++ {
+		output := filepath.Join(directory, fmt.Sprintf("frac%03d.png", number))
+		file, err := os.OpenFile(output, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if errors.Is(err, os.ErrExist) {
+			continue
+		}
+		if err != nil {
+			return "", err
+		}
+		err = png.Encode(file, img)
+		closeErr := file.Close()
+		if err != nil {
+			return "", err
+		}
+		if closeErr != nil {
+			return "", closeErr
+		}
+		return output, nil
+	}
 }
 
 func writeMetadata(output string, force bool, metadata randomMetadata) error {
