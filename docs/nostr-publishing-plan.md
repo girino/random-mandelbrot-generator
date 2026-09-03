@@ -35,8 +35,9 @@ Git Bash ou `/mnt/e/girino/Downloads/fract` no WSL.
 
 ## Configuracao
 
-O script recebe `--env ARQUIVO`, com padrao `.env` no diretorio atual. O
-arquivo e local e deve estar no `.gitignore`.
+O script recebe `--env ARQUIVO`; sem essa flag, carrega `.env` na raiz do
+projeto, independentemente do diretorio atual. O arquivo e local e deve estar
+no `.gitignore`.
 
 ```dotenv
 # Binarios opcionais

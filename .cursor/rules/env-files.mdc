@@ -1,0 +1,11 @@
+---
+description: Keep all .env files exclusively under user control
+alwaysApply: true
+---
+
+# Environment Files Are User-Owned
+
+- Never create, edit, delete, rename, overwrite, or restore a `.env` file, including `.env` files in subdirectories.
+- Never change environment values to configure, test, diagnose, or fix a feature.
+- When a `.env` change is needed, provide the exact variable and value for the user to change, then wait for them to do it.
+- Never display, copy, summarize, stage, or commit `.env` contents or secrets.

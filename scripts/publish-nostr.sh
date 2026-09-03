@@ -3,8 +3,10 @@ set -Eeuo pipefail
 
 PROJECT_URL="https://github.com/girino/random-mandelbrot-generator"
 DEFAULT_ALT="Imagem do conjunto de Mandelbrot gerada proceduralmente."
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+project_root="$(cd -- "$script_dir/.." && pwd)"
 
-env_file=".env"
+env_file="$project_root/.env"
 alt_text="$DEFAULT_ALT"
 extra_content=""
 dry_run=false
@@ -17,7 +19,7 @@ usage() {
 Usage: scripts/publish-nostr.sh [options] [fract random options]
 
 Options:
-  --env FILE       Configuration file (default: .env)
+  --env FILE       Configuration file (default: project-root/.env)
   --alt TEXT       Image alt text
   --content TEXT   Caption prepended to the Nostr note
   --dry-run        Generate artifacts and print the note without upload or relay access

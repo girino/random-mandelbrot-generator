@@ -116,8 +116,9 @@ note includes the image URL, NIP-92 `imeta` metadata, the reproduction command,
 and the project URL.
 
 Prerequisites: Bash 4+, `fract`, `nak`, `jq`, and `sha256sum`. Use Linux, Git
-Bash, or WSL. Copy `.env.example` to `.env` and provide your bunker URI and
-output directory; `.env` is ignored by Git.
+Bash, or WSL. Copy `.env.example` to `.env` in the project root and provide
+your bunker URI and output directory; `.env` is ignored by Git. The script
+loads this project-root `.env` regardless of the current directory.
 
 ```bash
 cp .env.example .env
