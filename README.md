@@ -11,7 +11,7 @@ in `SHA256SUMS`, and place `fract` on your `PATH`.
 With Go installed, you can also run:
 
 ```sh
-go install github.com/girino/random-mandelbrot-generator/cmd/fract@latest
+go install github.com/girino/random-mandelbrot-generator@latest
 ```
 
 ## Usage
