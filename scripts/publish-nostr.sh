@@ -145,11 +145,11 @@ EOF
   blob_url="https://example.invalid/not-uploaded.png"
 else
   export NOSTR_CLIENT_KEY
-  NOSTR_CLIENT_KEY="$("$NAK_BIN" key generate)"
+  NOSTR_CLIENT_KEY="$("$NAK_BIN" key generate </dev/null)"
   blossom_host="${FRACT_BLOSSOM_SERVER#https://}"
   blossom_host="${blossom_host#http://}"
   blossom_host="${blossom_host%%/*}"
-  blob_descriptor="$("$NAK_BIN" blossom --server "$blossom_host" --sec "$FRACT_BUNKER_URI" upload "$png_path")"
+  blob_descriptor="$("$NAK_BIN" blossom --server "$blossom_host" --sec "$FRACT_BUNKER_URI" upload "$png_path" </dev/null)"
   printf '%s\n' "$blob_descriptor" > "$tmp_dir/blob-descriptor.json"
   blob_url="$(jq -er '.url' <<<"$blob_descriptor")"
   blob_sha256="$(jq -r '(.sha256 // empty) | ascii_downcase' <<<"$blob_descriptor")"
@@ -201,7 +201,7 @@ $note"
     relay_args+=("$relay")
   done
   ((${#relay_args[@]})) || fail 'FRACT_RELAYS contains no relay URLs'
-  event_json="$("$NAK_BIN" event --sec "$FRACT_BUNKER_URI" --kind 1 --content "$note" --tag "imeta=url $blob_url;m image/png;x $sha256;size $size;dim ${width}x${height};alt $alt_text" "${relay_args[@]}")"
+  event_json="$("$NAK_BIN" event --sec "$FRACT_BUNKER_URI" --kind 1 --content "$note" --tag "imeta=url $blob_url;m image/png;x $sha256;size $size;dim ${width}x${height};alt $alt_text" "${relay_args[@]}" </dev/null)"
   event_id="$(jq -er '.id' <<<"$event_json")"
   printf 'published %s\nevent: %s\n' "$blob_url" "$event_id" >&2
 fi
