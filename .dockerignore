@@ -1,0 +1,10 @@
+.env
+.git
+.cursor
+docs
+output
+fract
+*.exe
+*.png
+*.json
+go*.tar.gz

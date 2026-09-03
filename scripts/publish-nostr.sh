@@ -89,7 +89,7 @@ while (($#)); do
   esac
 done
 
-[[ -f "$env_file" ]] || fail "configuration file not found: $env_file"
+[[ -e "$env_file" ]] || fail "configuration file not found: $env_file"
 # The local .env is trusted configuration and must not be committed.
 set -a
 # shellcheck source=/dev/null

@@ -1,0 +1,13 @@
+services:
+  nostr-publish:
+    build:
+      context: .
+    env_file:
+      - .env
+    environment:
+      FRACT_BIN: /usr/local/bin/fract
+      NAK_BIN: /usr/local/bin/nak
+      FRACT_OUTPUT_DIR: /output
+    volumes:
+      - ./output:/output
+    command: ["--env", "/dev/null", "--dry-run"]
