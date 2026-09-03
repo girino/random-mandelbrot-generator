@@ -47,7 +47,7 @@ NAK_BIN=nak
 FRACT_BUNKER_URI=bunker://...
 
 # Destinos de publicacao.
-FRACT_BLOSSOM_SERVER=https://blossom-espelhator.girino.org
+FRACT_BLOSSOM_SERVER=https://blossom.primal.net
 FRACT_RELAYS=ws://localhost:10547
 
 # Diretorio para PNG e JSON de cada geracao.
