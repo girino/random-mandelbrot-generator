@@ -131,7 +131,7 @@ width="$(jq -er '.width' "$metadata_path")"
 height="$(jq -er '.height' "$metadata_path")"
 
 reproduce_command="fract render mandelbrot --center \"${center_real},${center_imag}\" --zoom ${zoom} --iterations ${iterations} --max-iterations ${max_iterations} --adaptive=${adaptive} --palette ${palette} --smooth=${smooth} --width ${width} --height ${height} --output reproduced.png"
-sha256="$(sha256sum "$png_path" | awk '{print $1}')"
+sha256="$(sha256sum "$png_path" | awk '{print tolower($1)}')"
 size="$(wc -c < "$png_path" | tr -d '[:space:]')"
 
 if [[ "$dry_run" == true ]]; then
@@ -148,12 +148,16 @@ else
   blossom_host="${blossom_host#http://}"
   blossom_host="${blossom_host%%/*}"
   blob_descriptor="$("$NAK_BIN" blossom --server "$blossom_host" --sec "$FRACT_BUNKER_URI" upload "$png_path")"
+  printf '%s\n' "$blob_descriptor" > "$tmp_dir/blob-descriptor.json"
   blob_url="$(jq -er '.url' <<<"$blob_descriptor")"
-  blob_sha256="$(jq -er '.sha256' <<<"$blob_descriptor")"
+  blob_sha256="$(jq -er '.sha256 | ascii_downcase' <<<"$blob_descriptor")"
   blob_size="$(jq -er '.size' <<<"$blob_descriptor")"
   blob_type="$(jq -er '.type' <<<"$blob_descriptor")"
   [[ "$blob_url" == https://* ]] || fail 'Blossom returned a non-HTTPS URL'
-  [[ "$blob_sha256" == "$sha256" ]] || fail 'Blossom SHA-256 does not match upload'
+  if [[ "$blob_sha256" != "$sha256" ]]; then
+    printf 'error: Blossom SHA-256 does not match upload (local=%s, server=%s)\n' "$sha256" "$blob_sha256" >&2
+    fail 'inspect blob-descriptor.json with --keep-failed'
+  fi
   [[ "$blob_size" == "$size" ]] || fail 'Blossom size does not match upload'
   [[ "$blob_type" == image/png ]] || fail 'Blossom MIME type is not image/png'
 

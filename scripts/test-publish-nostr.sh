@@ -8,4 +8,5 @@ grep -Fq 'FRACT_RELAYS=wss://relay.damus.io,wss://nos.lol' "$root_dir/.env.examp
 grep -Fq 'nak blossom' "$script_dir/publish-nostr.sh"
 grep -Fq 'imeta=url' "$script_dir/publish-nostr.sh"
 grep -Fq 'reproduce_command=' "$script_dir/publish-nostr.sh"
+grep -Fq 'blob-descriptor.json' "$script_dir/publish-nostr.sh"
 printf 'publish-nostr shell checks passed\n'
