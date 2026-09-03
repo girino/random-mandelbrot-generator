@@ -10,4 +10,5 @@ services:
       FRACT_OUTPUT_DIR: /output
     volumes:
       - ./output:/output
-    command: ["--env", "/dev/null", "--dry-run"]
+    entrypoint: ["/app/scripts/publish-nostr.sh", "--env", "/dev/null"]
+    command: ["--dry-run"]

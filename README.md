@@ -141,7 +141,8 @@ docker compose run --rm nostr-publish
 ```
 
 Pass random-generation arguments after the service name. This replaces the
-default dry-run command and performs a real upload and publication:
+default dry-run command while retaining the container environment configuration,
+then performs a real upload and publication:
 
 ```bash
 docker compose run --rm nostr-publish --seed 42 --size 1080x1080 --random-palette
