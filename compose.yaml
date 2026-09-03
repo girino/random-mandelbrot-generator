@@ -11,4 +11,4 @@ services:
       FRACT_INTERVAL_SECONDS: "1800"
     volumes:
       - ./output:/output
-    command: ["--random-palette"]
+    command: ["--random-palette", "--max-iterations", "1048576"]
