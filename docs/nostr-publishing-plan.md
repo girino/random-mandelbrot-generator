@@ -140,8 +140,11 @@ conjunto de Mandelbrot gerada proceduralmente.`
 ## Falhas e Seguranca
 
 - Nunca imprimir URI do bunker, segredo de sessao ou cabecalhos Authorization.
-- Interromper se o upload retornar dados inconsistentes. Com `--keep-failed`,
-  preservar tambem `blob-descriptor.json` para diagnostico.
+- Interromper se o upload retornar dados inconsistentes. Algumas versoes do
+  `nak` podem imprimir um Blob Descriptor incompleto, embora o upload tenha
+  sido aceito pelo servidor; nesse caso, validar o SHA-256 no nome da URL e
+  usar tamanho e MIME locais com aviso. Com `--keep-failed`, preservar tambem
+  `blob-descriptor.json` para diagnostico.
 - Nao publicar se a assinatura, upload ou todos os relays falharem.
 - Nao apagar PNG ou metadados em uma falha; preserva-los quando solicitado com
   `--keep-failed`.

@@ -152,13 +152,29 @@ else
   blob_descriptor="$("$NAK_BIN" blossom --server "$blossom_host" --sec "$FRACT_BUNKER_URI" upload "$png_path")"
   printf '%s\n' "$blob_descriptor" > "$tmp_dir/blob-descriptor.json"
   blob_url="$(jq -er '.url' <<<"$blob_descriptor")"
-  blob_sha256="$(jq -er '.sha256 | ascii_downcase' <<<"$blob_descriptor")"
-  blob_size="$(jq -er '.size' <<<"$blob_descriptor")"
-  blob_type="$(jq -er '.type' <<<"$blob_descriptor")"
+  blob_sha256="$(jq -r '(.sha256 // empty) | ascii_downcase' <<<"$blob_descriptor")"
+  blob_size="$(jq -r '.size // 0' <<<"$blob_descriptor")"
+  blob_type="$(jq -r '.type // empty' <<<"$blob_descriptor")"
   [[ "$blob_url" == https://* ]] || fail 'Blossom returned a non-HTTPS URL'
+  if [[ -z "$blob_sha256" ]]; then
+    url_filename="${blob_url%%\?*}"
+    url_filename="${url_filename##*/}"
+    url_sha256="${url_filename%%.*}"
+    [[ "$url_sha256" =~ ^[[:xdigit:]]{64}$ ]] || fail 'nak omitted SHA-256 and the Blob URL has no hash filename'
+    blob_sha256="${url_sha256,,}"
+    printf 'warning: nak omitted SHA-256; verified hash from Blob URL filename\n' >&2
+  fi
   if [[ "$blob_sha256" != "$sha256" ]]; then
     printf 'error: Blossom SHA-256 does not match upload (local=%s, server=%s)\n' "$sha256" "$blob_sha256" >&2
     fail 'inspect blob-descriptor.json with --keep-failed'
+  fi
+  if [[ "$blob_size" == 0 ]]; then
+    blob_size="$size"
+    printf 'warning: nak omitted size; using local byte count\n' >&2
+  fi
+  if [[ -z "$blob_type" ]]; then
+    blob_type="image/png"
+    printf 'warning: nak omitted MIME type; using image/png\n' >&2
   fi
   [[ "$blob_size" == "$size" ]] || fail 'Blossom size does not match upload'
   [[ "$blob_type" == image/png ]] || fail 'Blossom MIME type is not image/png'
