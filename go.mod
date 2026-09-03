@@ -1,3 +1,3 @@
-module github.com/girino/mandelbrot-cli
+module github.com/girino/random-mandelbrot-generator
 
 go 1.25

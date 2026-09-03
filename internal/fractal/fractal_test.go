@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/girino/mandelbrot-cli/internal/palette"
+	"github.com/girino/random-mandelbrot-generator/internal/palette"
 )
 
 func TestMandelbrotReferencePixels(t *testing.T) {

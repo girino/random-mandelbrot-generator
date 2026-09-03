@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/girino/mandelbrot-cli/internal/cli"
+	"github.com/girino/random-mandelbrot-generator/internal/cli"
 )
 
 var version = "v0.1.0"

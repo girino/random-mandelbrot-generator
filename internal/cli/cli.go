@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/girino/mandelbrot-cli/internal/fractal"
-	"github.com/girino/mandelbrot-cli/internal/palette"
+	"github.com/girino/random-mandelbrot-generator/internal/fractal"
+	"github.com/girino/random-mandelbrot-generator/internal/palette"
 )
 
 const (
