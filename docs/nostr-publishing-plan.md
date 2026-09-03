@@ -48,7 +48,7 @@ FRACT_BUNKER_URI=bunker://...
 
 # Destinos de publicacao.
 FRACT_BLOSSOM_SERVER=https://blossom.primal.net
-FRACT_RELAYS=ws://localhost:10547
+FRACT_RELAYS=wss://relay.damus.io,wss://nos.lol
 
 # Diretorio para PNG e JSON de cada geracao.
 FRACT_OUTPUT_DIR=/caminho/para/fract
