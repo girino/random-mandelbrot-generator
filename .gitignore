@@ -1,3 +1,4 @@
 *.png
 *.json
 *.exe
+.env

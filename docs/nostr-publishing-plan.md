@@ -15,18 +15,18 @@ armazenar segredos no repositorio nem fazer push Git.
 
 ## Entregaveis
 
-- `scripts/publish-nostr.sh`: orquestrador Bash.
-- `.env.example`: contrato de configuracao sem valores secretos.
-- Atualizacao do `README.md`: pre-requisitos, exemplos e limitacoes.
-- Testes de shell para validacao de configuracao e composicao de comandos,
-  sem publicar eventos reais.
+- `scripts/publish-nostr.sh`: orquestrador Bash implementado.
+- `.env.example`: contrato de configuracao sem valores secretos implementado.
+- `README.md`: pre-requisitos, exemplos e limitacoes implementados.
+- `scripts/test-publish-nostr.sh`: checks estaticos de sintaxe e composicao.
 
 ## Pre-requisitos
 
 - Bash 4 ou superior.
 - `fract` disponivel em `PATH`, ou configurado em `FRACT_BIN`.
 - `nak` disponivel em `PATH`, ou configurado em `NAK_BIN`.
-- `curl` com HTTPS e `sha256sum` ou alternativa portavel para calcular SHA-256.
+- `jq` para interpretar os metadados JSON e o Blob Descriptor.
+- `sha256sum` para calcular SHA-256.
 - Um bunker NIP-46 autorizado a assinar os eventos necessarios.
 
 No Windows, executar pelo Git Bash ou WSL. Caminhos devem ser fornecidos no
@@ -111,15 +111,13 @@ As demais opcoes sao repassadas a `fract random`.
 
 ## Uso de Nak e Bunker
 
-Antes da implementacao, fazer um spike tecnico com a versao de `nak` adotada
-para confirmar a sintaxe de conexao NIP-46, assinatura de eventos arbitrarios
-e publicacao em varios relays. O script deve encapsular essa sintaxe em funcoes
-pequenas, como `sign_event` e `publish_event`, para evitar espalhar comandos
-especificos da ferramenta.
+O script usa `nak blossom --server HOST --sec BUNKER upload ARQUIVO`, que cria
+a autorizacao Blossom pelo bunker, e `nak event --sec BUNKER ... RELAY...` para
+assinar e publicar a nota. `NOSTR_CLIENT_KEY` recebe uma chave efemera criada
+por `nak key generate` para a sessao NIP-46 e e removida no encerramento.
 
-Se `nak` nao suportar a assinatura BUD-11 por bunker, o plano deve ser ajustado
-para uma ferramenta compatível; nao usar chave privada local como fallback sem
-uma decisao explicita.
+Nao ha fallback para chave privada local. Se o bunker ou o servidor Blossom
+recusar a operacao, o script falha sem publicar a nota.
 
 ## Conteudo Padrao da Nota
 
@@ -150,8 +148,9 @@ conjunto de Mandelbrot gerada proceduralmente.`
 
 ## Validacao
 
-1. Testar o parser de `.env` e a ausencia de variaveis obrigatorias.
-2. Testar `--dry-run` com `fract` e `nak` simulados no `PATH`.
+1. Executar `bash scripts/test-publish-nostr.sh` para validar sintaxe e
+   composicao estatica.
+2. Testar `--dry-run` com `fract` e `jq` instalados.
 3. Validar que o evento contem URL da imagem, `imeta`, comando e link GitHub.
 4. Validar falha quando o SHA-256 ou MIME do Blob Descriptor divergir.
 5. Validar sucesso parcial com um relay aceitando e outro falhando.

@@ -108,6 +108,27 @@ After every `fract random` render, standard error prints a `fract render
 mandelbrot` command with the exact final render parameters. It writes to
 `reproduced.png`; change that output path before running it.
 
+## Nostr Publishing
+
+`scripts/publish-nostr.sh` generates a random image, uploads it to Blossom
+through `nak` using a NIP-46 bunker, and publishes a `kind:1` Nostr note. The
+note includes the image URL, NIP-92 `imeta` metadata, the reproduction command,
+and the project URL.
+
+Prerequisites: Bash 4+, `fract`, `nak`, `jq`, and `sha256sum`. Use Linux, Git
+Bash, or WSL. Copy `.env.example` to `.env` and provide your bunker URI and
+output directory; `.env` is ignored by Git.
+
+```bash
+cp .env.example .env
+bash scripts/publish-nostr.sh --seed 42 --size 1080x1080 --random-palette
+```
+
+Use `--dry-run` to generate the PNG and metadata without requesting a bunker
+signature, uploading, or publishing. `--alt` and `--content` customize the
+image description and caption. The script reserves `--output`, `--output-dir`,
+and `--metadata`; all other arguments are passed to `fract random`.
+
 ## Development
 
 ```sh
