@@ -20,8 +20,9 @@ WORKDIR /app
 COPY --from=build /out/fract /usr/local/bin/fract
 COPY --from=build /out/nak /usr/local/bin/nak
 COPY scripts/publish-nostr.sh /app/scripts/publish-nostr.sh
+COPY scripts/publish-loop.sh /app/scripts/publish-loop.sh
 
-RUN chmod 0755 /app/scripts/publish-nostr.sh
+RUN chmod 0755 /app/scripts/publish-nostr.sh /app/scripts/publish-loop.sh
 
-ENTRYPOINT ["/app/scripts/publish-nostr.sh"]
-CMD ["--env", "/dev/null", "--dry-run"]
+ENTRYPOINT ["/app/scripts/publish-loop.sh"]
+CMD ["--random-palette"]

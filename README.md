@@ -134,25 +134,24 @@ and `--metadata`; all other arguments are passed to `fract random`.
 
 Docker Compose loads `.env` as container environment variables without
 modifying or copying it into the image. Generated PNG and JSON files are saved
-to `./output` on the host. The default command is a dry run:
+to `./output` on the host. The worker publishes immediately, then every 30
+minutes (`FRACT_INTERVAL_SECONDS=1800`):
 
 ```bash
-docker compose run --rm nostr-publish
+docker compose up --build
 ```
 
-Pass random-generation arguments after the service name. This replaces the
-default dry-run command while retaining the container environment configuration,
-then performs a real upload and publication:
+Override `FRACT_INTERVAL_SECONDS` in Compose or the runtime environment to
+change the interval. To run one safe dry-run instead of the worker:
 
 ```bash
-docker compose run --rm nostr-publish --seed 42 --size 1080x1080 --random-palette
+docker compose run --rm --entrypoint /app/scripts/publish-nostr.sh nostr-publish --env /dev/null --dry-run --seed 42 --size 1080x1080
 ```
 
-Use `--dry-run` explicitly when passing other arguments but avoiding network
-operations:
+To publish once without starting the loop:
 
 ```bash
-docker compose run --rm nostr-publish --dry-run --seed 42 --size 1080x1080
+docker compose run --rm --entrypoint /app/scripts/publish-nostr.sh nostr-publish --env /dev/null --seed 42 --size 1080x1080 --random-palette
 ```
 
 ## Development

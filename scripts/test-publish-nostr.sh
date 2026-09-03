@@ -11,4 +11,5 @@ grep -Fq 'reproduce_command=' "$script_dir/publish-nostr.sh"
 grep -Fq 'blob-descriptor.json' "$script_dir/publish-nostr.sh"
 grep -Fq 'env_file="$project_root/.env"' "$script_dir/publish-nostr.sh"
 grep -Fq 'verified hash from Blob URL filename' "$script_dir/publish-nostr.sh"
+grep -Fq 'FRACT_INTERVAL_SECONDS' "$script_dir/publish-loop.sh"
 printf 'publish-nostr shell checks passed\n'

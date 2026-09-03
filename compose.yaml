@@ -8,7 +8,7 @@ services:
       FRACT_BIN: /usr/local/bin/fract
       NAK_BIN: /usr/local/bin/nak
       FRACT_OUTPUT_DIR: /output
+      FRACT_INTERVAL_SECONDS: "1800"
     volumes:
       - ./output:/output
-    entrypoint: ["/app/scripts/publish-nostr.sh", "--env", "/dev/null"]
-    command: ["--dry-run"]
+    command: ["--random-palette"]
