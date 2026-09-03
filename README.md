@@ -8,6 +8,12 @@ release renders Mandelbrot sets on the CPU and writes opaque RGB PNG files.
 Download the archive for your platform from GitHub Releases, verify its entry
 in `SHA256SUMS`, and place `fract` on your `PATH`.
 
+With Go installed, you can also run:
+
+```sh
+go install github.com/girino/random-mandelbrot-generator/cmd/fract@latest
+```
+
 ## Usage
 
 ```sh
