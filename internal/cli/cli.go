@@ -103,8 +103,8 @@ type randomStep struct {
 	Complexity int     `json:"complexity"`
 }
 
-// Run executes the public fract command-line interface.
-func Run(args []string, stdout, stderr io.Writer, version string) error {
+// Run executes the public command-line interface.
+func Run(args []string, stdout, stderr io.Writer, version, executable string) error {
 	if len(args) == 1 && args[0] == "--version" {
 		_, err := fmt.Fprintln(stdout, version)
 		return err
@@ -122,10 +122,10 @@ func Run(args []string, stdout, stderr io.Writer, version string) error {
 		if err != nil {
 			return err
 		}
-		return randomRender(options, stdout, stderr)
+		return randomRender(options, stdout, stderr, executable)
 	}
 	if len(args) < 2 || args[0] != "render" || args[1] != "mandelbrot" {
-		return errors.New("usage: fract render mandelbrot [options], fract random [options], fract palettes list, or fract --version")
+		return fmt.Errorf("usage: %s render mandelbrot [options], %s random [options], %s palettes list, or %s --version", executable, executable, executable, executable)
 	}
 	options, err := parseRenderOptions(args[2:], stderr)
 	if err != nil {
@@ -338,7 +338,7 @@ func render(o renderOptions, stdout, stderr io.Writer) error {
 	return nil
 }
 
-func randomRender(o randomOptions, stdout, stderr io.Writer) error {
+func randomRender(o randomOptions, stdout, stderr io.Writer, executable string) error {
 	random := rand.New(rand.NewSource(o.seed))
 	passes := o.minPasses + random.Intn(o.maxPasses-o.minPasses+1)
 	center := complex(-.5, 0)
@@ -396,18 +396,18 @@ func randomRender(o randomOptions, stdout, stderr io.Writer) error {
 			return err
 		}
 	}
-	fmt.Fprintln(stderr, reproductionCommand(center, zoom, o, max(o.maxIterations, searchIterations), name))
+	fmt.Fprintln(stderr, reproductionCommand(center, zoom, o, max(o.maxIterations, searchIterations), name, executable))
 	if !o.quiet && output != "-" {
 		fmt.Fprintln(stderr, "wrote", output)
 	}
 	return nil
 }
 
-func reproductionCommand(center complex128, zoom float64, options randomOptions, maxIterations int, paletteName string) string {
+func reproductionCommand(center complex128, zoom float64, options randomOptions, maxIterations int, paletteName, executable string) string {
 	centerValue := fmt.Sprintf("%.17g,%.17g", real(center), imag(center))
 	return fmt.Sprintf(
-		"reproduce with: fract render mandelbrot --center %q --zoom %.17g --iterations %d --max-iterations %d --adaptive=%t --palette %s --smooth=%t --width %d --height %d --threads %d --output reproduced.png",
-		centerValue, zoom, options.iterations, maxIterations, options.adaptive, paletteName, options.smooth, options.width, options.height, options.threads,
+		"reproduce with: %s render mandelbrot --center %q --zoom %.17g --iterations %d --max-iterations %d --adaptive=%t --palette %s --smooth=%t --width %d --height %d --threads %d --output reproduced.png",
+		executable, centerValue, zoom, options.iterations, maxIterations, options.adaptive, paletteName, options.smooth, options.width, options.height, options.threads,
 	)
 }
 

@@ -72,7 +72,7 @@ func TestAdaptiveDefaults(t *testing.T) {
 
 func TestRunWritesPNGToStandardOutput(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	err := Run([]string{"render", "mandelbrot", "--size", "2x2", "--iterations", "4", "--quiet", "--output", "-"}, &stdout, &stderr, "v0.1.0")
+	err := Run([]string{"render", "mandelbrot", "--size", "2x2", "--iterations", "4", "--quiet", "--output", "-"}, &stdout, &stderr, "v0.1.0", "fract")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestRunWritesPNGToStandardOutput(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var stdout, stderr bytes.Buffer
-	if err := Run([]string{"--version"}, &stdout, &stderr, "v0.1.0"); err != nil {
+	if err := Run([]string{"--version"}, &stdout, &stderr, "v0.1.0", "fract"); err != nil {
 		t.Fatal(err)
 	}
 	if stdout.String() != "v0.1.0\n" || stderr.Len() != 0 {
@@ -97,17 +97,17 @@ func TestVersion(t *testing.T) {
 func TestRandomRenderIsReproducible(t *testing.T) {
 	args := []string{"random", "--output", "-", "--quiet", "--seed", "7", "--min-passes", "1", "--max-passes", "1", "--sample-size", "16", "--iterations", "64", "--size", "8x8", "--palette", "fire"}
 	var first, firstErr bytes.Buffer
-	if err := Run(args, &first, &firstErr, "v0.1.0"); err != nil {
+	if err := Run(args, &first, &firstErr, "v0.1.0", "random-mandelbrot-generator"); err != nil {
 		t.Fatal(err)
 	}
 	var second, secondErr bytes.Buffer
-	if err := Run(args, &second, &secondErr, "v0.1.0"); err != nil {
+	if err := Run(args, &second, &secondErr, "v0.1.0", "random-mandelbrot-generator"); err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(first.Bytes(), second.Bytes()) {
 		t.Fatal("fixed random seed produced different PNG output")
 	}
-	if firstErr.String() != secondErr.String() || !strings.Contains(firstErr.String(), "reproduce with: fract render mandelbrot --center") {
+	if firstErr.String() != secondErr.String() || !strings.Contains(firstErr.String(), "reproduce with: random-mandelbrot-generator render mandelbrot --center") {
 		t.Fatalf("unexpected reproduction output: %q", firstErr.String())
 	}
 	if _, err := png.Decode(bytes.NewReader(first.Bytes())); err != nil {
